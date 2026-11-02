@@ -6,7 +6,13 @@ import {
   ResourceTemplate,
 } from "@modelcontextprotocol/server";
 import { serveStdio } from "@modelcontextprotocol/server/stdio";
+import {
+  RESOURCE_MIME_TYPE,
+  registerAppResource,
+  registerAppTool,
+} from "@modelcontextprotocol/ext-apps/server";
 import * as z from "zod/v4";
+import { ALERTS_VIEW_URI, alertsViewHtml } from "./alerts-view.js";
 
 const NWS_API_BASE = process.env.NWS_API_BASE ?? "https://api.weather.gov";
 const USER_AGENT = "weather-app/1.0";
@@ -290,7 +296,26 @@ function buildServer(subscribable = false): McpServer {
     },
   );
 
-  server.registerTool(
+  // The view hosts render for get-alerts: a state picker that re-calls the
+  // tool through the host and tells the model what the user switched to.
+  registerAppResource(
+    server,
+    "Weather alerts view",
+    ALERTS_VIEW_URI,
+    { description: "Interactive list of a state's active weather alerts" },
+    async () => ({
+      contents: [
+        {
+          uri: ALERTS_VIEW_URI,
+          mimeType: RESOURCE_MIME_TYPE,
+          text: alertsViewHtml(),
+        },
+      ],
+    }),
+  );
+
+  registerAppTool(
+    server,
     "get-alerts",
     {
       title: "Get Weather Alerts",
@@ -302,6 +327,7 @@ function buildServer(subscribable = false): McpServer {
           .describe("Two-letter state code (e.g. CA, NY)"),
       }),
       outputSchema: alertsOutputSchema,
+      _meta: { ui: { resourceUri: ALERTS_VIEW_URI } },
     },
     async ({ state }) => {
       const stateCode = state.toUpperCase();
