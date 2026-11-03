@@ -15,6 +15,7 @@ import {
 } from "@modelcontextprotocol/ext-apps/server";
 import * as z from "zod/v4";
 import { ALERTS_VIEW_URI, alertsViewHtml } from "./alerts-view.js";
+import { registerPrompts } from "./prompts.js";
 
 const NWS_API_BASE = process.env.NWS_API_BASE ?? "https://api.weather.gov";
 const USER_AGENT = "weather-app/1.0";
@@ -446,6 +447,8 @@ function buildServer(subscribable = false): McpServer {
       return { content: [{ type: "text", text }] };
     },
   );
+
+  registerPrompts(server, { fetchAlerts, alertsUri });
 
   return server;
 }
