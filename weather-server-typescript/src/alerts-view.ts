@@ -1,7 +1,6 @@
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { createRequire } from "node:module";
-
-export const ALERTS_VIEW_URI = "ui://weather/alerts.html";
 
 const STATES = [
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI",
@@ -211,3 +210,10 @@ export function alertsViewHtml(): string {
 </html>`;
   return cachedHtml;
 }
+
+// Hosts such as Claude cache views by URI, so a changed view needs a new URI.
+// The hash changes whenever the HTML does, so hosts always load the current view.
+export const ALERTS_VIEW_URI = `ui://weather/alerts-${createHash("sha256")
+  .update(alertsViewHtml())
+  .digest("hex")
+  .slice(0, 12)}.html`;

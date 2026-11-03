@@ -58,7 +58,7 @@ Both tools declare an `outputSchema` and return `structuredContent`. Both return
 
 ## Alerts widget
 
-`get-alerts` ships an [MCP App](https://github.com/modelcontextprotocol/ext-apps) view, `ui://weather/alerts.html` (see `src/alerts-view.ts`). Hosts that support MCP Apps, such as Claude Desktop, render it in a sandboxed iframe next to the tool result.
+`get-alerts` ships an [MCP App](https://github.com/modelcontextprotocol/ext-apps) view at `ui://weather/alerts-<hash>.html` (see `src/alerts-view.ts`). The hash comes from the view's HTML, so a changed view gets a new URI and hosts that cache views by URI load the new one. Hosts that support MCP Apps, such as Claude Desktop, render it in a sandboxed iframe next to the tool result.
 
 - **State picker.** Changing the state calls `get-alerts` again through the host (`tools/call` over `postMessage`). The view never holds credentials: the host forwards the call over its own connection to this server.
 - **Model context.** After a switch, the view sends `ui/update-model-context` with the new state and its alerts, so the model knows what the user is looking at. Hosts that don't support it ignore the update and the view keeps working.
