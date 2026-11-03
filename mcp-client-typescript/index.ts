@@ -1,6 +1,10 @@
 import Anthropic from "@anthropic-ai/sdk";
 
-import { Client } from "@modelcontextprotocol/client";
+import {
+  Client,
+  type Prompt,
+  type PromptMessage,
+} from "@modelcontextprotocol/client";
 import { StdioClientTransport } from "@modelcontextprotocol/client/stdio";
 import readline from "readline/promises";
 
@@ -19,6 +23,7 @@ class MCPClient {
   private _anthropic: Anthropic | null = null;
   private transport: StdioClientTransport | null = null;
   private tools: Anthropic.Tool[] = [];
+  private prompts: Prompt[] = [];
 
   constructor() {
     // 'auto' probes server/discover, falling back to the 2025-11-25 handshake.
@@ -73,6 +78,15 @@ class MCPClient {
         "Connected to server with tools:",
         this.tools.map(({ name }) => name),
       );
+
+      // Prompts are optional; only list them if the server offers them.
+      if (this.mcp.getServerCapabilities()?.prompts) {
+        this.prompts = (await this.mcp.listPrompts()).prompts;
+        console.log(
+          "Server prompts:",
+          this.prompts.map(({ name }) => name),
+        );
+      }
     } catch (e) {
       console.log("Failed to connect to MCP server: ", e);
       throw e;
@@ -86,13 +100,16 @@ class MCPClient {
      * @param query - The user's input query
      * @returns Processed response as a string
      */
-    const messages: Anthropic.MessageParam[] = [
-      {
-        role: "user",
-        content: query,
-      },
-    ];
+    return this.runConversation([{ role: "user", content: query }]);
+  }
 
+  async runConversation(messages: Anthropic.MessageParam[]) {
+    /**
+     * Send messages to Claude and run any tools it asks for
+     *
+     * @param messages - The conversation so far, ending with the user's turn
+     * @returns Processed response as a string
+     */
     let response = await this.anthropic.messages.create({
       model: ANTHROPIC_MODEL,
       max_tokens: MAX_TOKENS,
@@ -179,6 +196,102 @@ class MCPClient {
     return finalText.join("\n");
   }
 
+  listPrompts() {
+    if (this.prompts.length === 0) {
+      console.log("\nThis server offers no prompts.");
+      return;
+    }
+    for (const prompt of this.prompts) {
+      console.log(`\n/${prompt.name} - ${prompt.description ?? prompt.title ?? ""}`);
+      for (const arg of prompt.arguments ?? []) {
+        const required = arg.required ? "required" : "optional";
+        console.log(`    ${arg.name} (${required}): ${arg.description ?? ""}`);
+      }
+    }
+  }
+
+  async completeArgument(promptName: string, argName: string, typed: string) {
+    // The server suggests values for a prompt argument from what was typed.
+    const result = await this.mcp.complete({
+      ref: { type: "ref/prompt", name: promptName },
+      argument: { name: argName, value: typed },
+    });
+    const values = result.completion.values;
+    console.log(values.length ? `\n${values.join(", ")}` : "\nNo suggestions.");
+  }
+
+  async promptContentText(content: PromptMessage["content"]): Promise<string> {
+    // Turn one block of prompt content into text Claude can read.
+    switch (content.type) {
+      case "text":
+        return content.text;
+      case "resource": {
+        // Embedded: the server already put the data in the prompt.
+        const r = content.resource;
+        return `Attached ${r.uri}:\n${"text" in r ? r.text : "[binary data omitted]"}`;
+      }
+      case "resource_link": {
+        // Linked: the client fetches the data itself.
+        const { contents } = await this.mcp.readResource({ uri: content.uri });
+        const body = contents
+          .map((c) => ("text" in c ? c.text : "[binary data omitted]"))
+          .join("\n");
+        return `Attached ${content.uri}:\n${body}`;
+      }
+      default:
+        return `[${content.type} content omitted]`;
+    }
+  }
+
+  async runPrompt(
+    promptName: string,
+    args: Record<string, string>,
+    rl: readline.Interface,
+    signal: AbortSignal,
+  ) {
+    /**
+     * Get a prompt from the server and send its messages to Claude
+     */
+    const prompt = this.prompts.find(({ name }) => name === promptName);
+    if (!prompt) {
+      console.log(`\nNo prompt named ${promptName}. Type /prompts to list them.`);
+      return;
+    }
+
+    // Ask for any required argument that wasn't given on the command line.
+    for (const arg of prompt.arguments ?? []) {
+      if (arg.required && !args[arg.name]) {
+        args[arg.name] = await rl.question(
+          `${arg.name} (${arg.description ?? "required"}): `,
+          { signal },
+        );
+      }
+    }
+
+    const result = await this.mcp.getPrompt({ name: promptName, arguments: args });
+
+    // Merge back-to-back messages from the same role: Claude expects turns
+    // to alternate.
+    const messages: Anthropic.MessageParam[] = [];
+    console.log("\nMessages from the server's prompt:");
+    for (const message of result.messages) {
+      const text = await this.promptContentText(message.content);
+      console.log(`  [${message.role}] ${text.length > 200 ? text.slice(0, 200) + "…" : text}`);
+      const last = messages.at(-1);
+      if (last?.role === message.role) {
+        last.content = `${last.content}\n\n${text}`;
+      } else {
+        messages.push({ role: message.role, content: text });
+      }
+    }
+
+    if (!process.env.ANTHROPIC_API_KEY) {
+      console.log("\nSet ANTHROPIC_API_KEY to send these messages to Claude.");
+      return;
+    }
+    console.log("\n" + (await this.runConversation(messages)));
+  }
+
   async chatLoop() {
     /**
      * Run an interactive chat loop
@@ -198,6 +311,10 @@ class MCPClient {
     try {
       console.log("\nMCP Client Started!");
       console.log("Type your queries or 'quit' to exit.");
+      console.log("Prompt commands:");
+      console.log("  /prompts                          list the server's prompts");
+      console.log("  /prompt <name> [arg=value ...]    run a prompt");
+      console.log("  /complete <name> <arg> [typed]    autocomplete an argument");
 
       while (true) {
         let message: string;
@@ -210,8 +327,28 @@ class MCPClient {
         if (message.toLowerCase() === "quit") break;
 
         try {
-          const response = await this.processQuery(message);
-          console.log("\n" + response);
+          // Split on spaces, keeping key="quoted values" together.
+          const words =
+            message.match(/[^\s=]+="[^"]*"|\S+/g)?.map((w) => w.replace(/"/g, "")) ?? [];
+          const [command, name, ...rest] = words;
+
+          if (command === "/prompts") {
+            this.listPrompts();
+          } else if (command === "/complete" && name && rest[0]) {
+            await this.completeArgument(name, rest[0], rest[1] ?? "");
+          } else if (command === "/prompt" && name) {
+            const args = Object.fromEntries(
+              rest
+                .filter((w) => w.includes("="))
+                .map((w) => [w.slice(0, w.indexOf("=")), w.slice(w.indexOf("=") + 1)]),
+            );
+            await this.runPrompt(name, args, rl, ac.signal);
+          } else if (!process.env.ANTHROPIC_API_KEY) {
+            console.log("\nSet ANTHROPIC_API_KEY to ask Claude. Prompt commands work without it.");
+          } else {
+            const response = await this.processQuery(message);
+            console.log("\n" + response);
+          }
         } catch (e) {
           console.log(`\nError: ${e instanceof Error ? e.message : String(e)}`);
         }
@@ -247,7 +384,7 @@ async function main() {
         "\nNo ANTHROPIC_API_KEY found. To query these tools with Claude, set your API key:"
       );
       console.log("  export ANTHROPIC_API_KEY=your-api-key-here");
-      return;
+      console.log("You can still try the prompt commands.");
     }
 
     await mcpClient.chatLoop();

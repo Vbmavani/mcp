@@ -33,7 +33,19 @@ node build/index.js ../weather-server-typescript/build/index.js
 
 Type a question (for example, "What's the weather in Sacramento?") and Claude answers using the server's tools. Type `quit` to exit.
 
-Without an `ANTHROPIC_API_KEY`, the client still connects, prints the server's tools, and exits — useful for verifying the MCP wiring without credentials.
+Without an `ANTHROPIC_API_KEY`, the client still connects and prints the server's tools and prompts. The prompt commands below work without a key; questions to Claude need one.
+
+## Prompts
+
+If the server offers [prompts](https://modelcontextprotocol.io/specification/2026-07-28/server/prompts), the client lists them on connect and adds three commands:
+
+| Command | What it does |
+|---|---|
+| `/prompts` | List the server's prompts and their arguments |
+| `/prompt <name> [arg=value ...]` | Get the prompt from the server, show its messages, and send them to Claude. It asks for any required argument you leave out. Quote values with spaces: `when="this weekend"`. |
+| `/complete <name> <arg> [typed]` | Ask the server to autocomplete an argument, such as `/complete state-briefing state c` |
+
+When a prompt links a resource instead of embedding it, the client reads the resource itself before sending the messages. Back-to-back messages from the same role are merged, because Claude expects turns to alternate.
 
 ## Structured content
 
