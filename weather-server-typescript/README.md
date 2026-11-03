@@ -28,6 +28,31 @@ npm install && npm run build
 node build/index.js ../weather-server-typescript/build/index.js
 ```
 
+## Deploy online (Render)
+
+The server also runs over HTTP: `node build/index.js --http`. Locally it listens on `127.0.0.1:3333` with no API key. On a host, set these environment variables on the host, never in the code:
+
+| Variable | Value |
+|---|---|
+| `HOST` | `0.0.0.0`, so the host can reach the server |
+| `MCP_API_KEYS` | Comma-separated API keys. Required when `HOST` isn't `127.0.0.1`. |
+| `ALLOWED_HOSTS` | Your public hostname. Optional on Render, which sets `RENDER_EXTERNAL_HOSTNAME`. |
+
+On Render, create a **Web Service** from this repo with:
+
+| Setting | Value |
+|---|---|
+| Root Directory | `weather-server-typescript` |
+| Build Command | `npm install && npm run build` |
+| Start Command | `node build/index.js --http` |
+| Health Check Path | `/healthz` |
+
+Clients send a key as `Authorization: Bearer <key>`. For Claude Code:
+
+```bash
+claude mcp add --transport http weather https://<your-service>.onrender.com/mcp --header "Authorization: Bearer <key>"
+```
+
 ## Structured content
 
 Both tools declare an `outputSchema` and return `structuredContent`. `get-forecast` returns an object; `get-alerts` returns a top-level JSON array, which protocol revision `2026-07-28` is the first to allow — see [Structured Content](https://modelcontextprotocol.io/specification/2026-07-28/server/tools#structured-content) in the spec.

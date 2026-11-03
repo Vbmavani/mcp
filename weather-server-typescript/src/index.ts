@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { serve } from "@hono/node-server";
 import { createMcpHonoApp } from "@modelcontextprotocol/hono";
 import {
@@ -454,6 +455,20 @@ const onerror = (error: Error) => {
   console.error("Weather MCP Server error:", error);
 };
 
+function listEnv(value: string | undefined): string[] {
+  return (value ?? "").split(",").map((v) => v.trim()).filter(Boolean);
+}
+
+function matchesKey(header: string | undefined, keys: string[]): boolean {
+  const match = /^Bearer (.+)$/.exec(header ?? "");
+  if (!match) return false;
+  const given = Buffer.from(match[1]);
+  return keys.some((key) => {
+    const expected = Buffer.from(key);
+    return expected.length === given.length && timingSafeEqual(expected, given);
+  });
+}
+
 // One factory serves both protocol eras.
 if (process.argv.includes("--http")) {
   const port = Number(process.env.PORT ?? 3333);
@@ -461,11 +476,33 @@ if (process.argv.includes("--http")) {
   const handler = createMcpHandler((ctx) => buildServer(ctx.era === "modern"), {
     onerror,
   });
-  // Localhost host and origin validation is on by default.
-  const app = createMcpHonoApp();
+  // HOST=0.0.0.0 exposes the server; without ALLOWED_HOSTS the SDK keeps
+  // localhost-only host and origin validation. Render sets RENDER_EXTERNAL_HOSTNAME.
+  const host = process.env.HOST ?? "127.0.0.1";
+  const allowedHosts = listEnv(
+    process.env.ALLOWED_HOSTS ?? process.env.RENDER_EXTERNAL_HOSTNAME,
+  );
+  const app = createMcpHonoApp(
+    allowedHosts.length
+      ? { host, allowedHosts, allowedOrigins: allowedHosts }
+      : { host },
+  );
+  // Comma-separated keys; clients send one as "Authorization: Bearer <key>".
+  const apiKeys = listEnv(process.env.MCP_API_KEYS);
+  if (host !== "127.0.0.1" && !apiKeys.length) {
+    throw new Error("Set MCP_API_KEYS before serving on a public host");
+  }
+  app.get("/healthz", (c) => c.text("ok"));
+  app.use("/mcp", async (c, next) => {
+    if (!apiKeys.length || matchesKey(c.req.header("authorization"), apiKeys)) {
+      return next();
+    }
+    c.header("WWW-Authenticate", 'Bearer realm="weather-mcp"');
+    return c.json({ error: "Missing or invalid API key" }, 401);
+  });
   app.all("/mcp", (c) => handler.fetch(c.req.raw));
-  serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
-    console.error(`Weather MCP Server running on http://127.0.0.1:${port}/mcp`);
+  serve({ fetch: app.fetch, port, hostname: host }, () => {
+    console.error(`Weather MCP Server running on http://${host}:${port}/mcp`);
     watchAlerts((uri) => handler.notify.resourceUpdated(uri));
     rotateAlerts((uri) => handler.notify.resourceUpdated(uri));
   });
