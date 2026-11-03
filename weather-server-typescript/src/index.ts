@@ -2,6 +2,8 @@ import { serve } from "@hono/node-server";
 import { createMcpHonoApp } from "@modelcontextprotocol/hono";
 import {
   createMcpHandler,
+  inputRequired,
+  inputResponse,
   McpServer,
   ResourceTemplate,
 } from "@modelcontextprotocol/server";
@@ -386,6 +388,36 @@ function buildServer(subscribable = false): McpServer {
         .join("\n")}`;
 
       return { content: [{ type: "text", text }], structuredContent: forecast };
+    },
+  );
+
+  // URL-mode elicitation demo: asks the client to open a page in the browser.
+  // The page never reports back, so any answer ends the call.
+  server.registerTool(
+    "open-facebook-login",
+    {
+      title: "Open Facebook Login",
+      description: "Ask the client to open the Facebook login page in a browser",
+    },
+    async (ctx) => {
+      const answer = inputResponse(ctx.mcpReq.inputResponses, "login");
+
+      if (answer.kind === "missing") {
+        return inputRequired({
+          inputRequests: {
+            login: inputRequired.elicitUrl({
+              message: "Open the Facebook login page in your browser?",
+              url: "https://www.facebook.com/login",
+            }),
+          },
+        });
+      }
+
+      const text =
+        answer.kind === "elicit" && answer.action === "accept"
+          ? "Opened https://www.facebook.com/login in the browser."
+          : "The user did not open the page.";
+      return { content: [{ type: "text", text }] };
     },
   );
 
