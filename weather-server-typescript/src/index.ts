@@ -492,7 +492,6 @@ if (process.argv.includes("--http")) {
   if (host !== "127.0.0.1" && !apiKeys.length) {
     throw new Error("Set MCP_API_KEYS before serving on a public host");
   }
-  app.get("/healthz", (c) => c.text("ok"));
   app.use("/mcp", async (c, next) => {
     if (!apiKeys.length || matchesKey(c.req.header("authorization"), apiKeys)) {
       return next();

@@ -45,7 +45,6 @@ On Render, create a **Web Service** from this repo with:
 | Root Directory | `weather-server-typescript` |
 | Build Command | `npm install && npm run build` |
 | Start Command | `node build/index.js --http` |
-| Health Check Path | `/healthz` |
 
 Clients send a key as `Authorization: Bearer <key>`. For Claude Code:
 
