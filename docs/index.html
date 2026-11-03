@@ -1,0 +1,562 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Every part of the Model Context Protocol (2026-07-28) as one object, with a dropdown of every allowed value.">
+<title>MCP Master Object</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a sticky toolbar over one long code sheet; the object reads top to bottom like a spec file, with notes as trailing comments. */
+:root {
+  --bg: #f4f6f8; --sheet: #ffffff; --fg: #161a22; --muted: #5d6573; --rule: #dde2e8;
+  --key: #1d2433; --fixed: #17734f; --fixed-bg: rgba(23,115,79,.08);
+  --enum: #1c55b8; --enum-bg: rgba(28,85,184,.08); --enum-line: rgba(28,85,184,.35);
+  --free: #7a5a16; --dep: #a3402c; --punct: #8a92a0; --hit: rgba(240,180,40,.35); --guide: #e7eaee;
+  --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --sans: "IBM Plex Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0f1218; --sheet: #151a22; --fg: #e4e8ee; --muted: #98a1b0; --rule: #273040;
+  --key: #dfe5ee; --fixed: #5fd3a2; --fixed-bg: rgba(95,211,162,.1);
+  --enum: #8db5ff; --enum-bg: rgba(141,181,255,.1); --enum-line: rgba(141,181,255,.4);
+  --free: #e0bb6a; --dep: #f08f7a; --punct: #6b7484; --hit: rgba(240,180,40,.25); --guide: #1f2632; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0f1218; --sheet: #151a22; --fg: #e4e8ee; --muted: #98a1b0; --rule: #273040;
+  --key: #dfe5ee; --fixed: #5fd3a2; --fixed-bg: rgba(95,211,162,.1);
+  --enum: #8db5ff; --enum-bg: rgba(141,181,255,.1); --enum-line: rgba(141,181,255,.4);
+  --free: #e0bb6a; --dep: #f08f7a; --punct: #6b7484; --hit: rgba(240,180,40,.25); --guide: #1f2632; color-scheme: dark }
+
+* { box-sizing: border-box }
+body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.55 var(--sans); padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 0 64px }
+.wrap { max-width: 1180px; margin: 0 auto }
+header { padding-block: 40px 20px; display: grid; gap: 12px }
+h1 { font: 600 clamp(28px, 4.5vw, 40px)/1.1 var(--mono); letter-spacing: -.02em; margin: 0 }
+h1 span { color: var(--enum) }
+.lede { margin: 0; color: var(--muted); max-width: 70ch }
+.stats { display: flex; flex-wrap: wrap; gap: 8px 20px; font: 13px/1.4 var(--mono); color: var(--muted) }
+.stats b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums }
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 13.5px; align-items: center }
+.legend span { display: inline-flex; gap: 6px; align-items: center }
+
+.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg); padding-block: 10px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; border-bottom: 1px solid var(--rule) }
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg) }
+.bar input[type=search] { flex: 1 1 220px; min-width: 0; font: 14px var(--mono); padding: 8px 10px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--fg) }
+.bar button, .bar label { font: 500 13px var(--sans); padding: 8px 12px; border: 1px solid var(--rule); border-radius: 6px; background: var(--sheet); color: var(--fg); cursor: pointer; display: inline-flex; gap: 6px; align-items: center }
+.bar button:hover { border-color: var(--muted) }
+.bar button.primary { background: var(--fg); color: var(--sheet); border-color: var(--fg) }
+#found { font: 12.5px var(--mono); color: var(--muted); min-width: 7ch }
+:focus-visible { outline: 2px solid var(--enum); outline-offset: 2px }
+
+.sheet { margin-top: 16px; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; overflow-x: auto; padding-block: 16px }
+.code { font: 13.5px/1.75 var(--mono); min-width: max-content; padding-inline: 16px }
+.ln { display: flex; align-items: baseline; white-space: pre; border-radius: 3px }
+.ln.hit { background: var(--hit) }
+.ind { display: inline-block; flex: none; border-left: 1px solid var(--guide); width: 20px; align-self: stretch }
+.ind:first-child { border-left-color: transparent }
+.tg { flex: none; width: 16px; border: 0; background: none; color: var(--punct); cursor: pointer; padding: 0; font: inherit; text-align: left }
+.tg::before { content: "▾" }
+.closed > .ln .tg::before { content: "▸" }
+.tg.sp { cursor: default } .tg.sp::before { content: "" }
+.k { color: var(--key); font-weight: 500 }
+.p { color: var(--punct) }
+.fx { color: var(--fixed); background: var(--fixed-bg); padding: 0 4px; border-radius: 3px }
+.fr { color: var(--free); font-style: italic }
+.cm { color: var(--muted); font-style: italic; padding-left: 14px; white-space: normal; min-width: 260px }
+.cm.dep, .k.dep { color: var(--dep) }
+.dep-tag { color: var(--dep); font: 500 11px var(--sans); border: 1px solid var(--dep); border-radius: 3px; padding: 0 4px; margin-left: 8px; font-style: normal; letter-spacing: .02em }
+select { font: 500 13px var(--mono); color: var(--enum); background: var(--enum-bg); border: 1px solid var(--enum-line); border-radius: 4px; padding: 1px 22px 1px 6px; cursor: pointer; max-width: 46ch; appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--enum) 50%), linear-gradient(135deg, var(--enum) 50%, transparent 50%); background-position: right 10px top 50%, right 6px top 50%; background-size: 4px 4px; background-repeat: no-repeat }
+select option { color: var(--fg); background: var(--sheet) }
+.n { font: 11px var(--sans); color: var(--muted); margin-left: 6px; font-style: normal; white-space: nowrap }
+.closed > .kids { display: none }
+.closed > .ln .sum { display: inline }
+.sum { display: none; color: var(--punct) }
+
+.out { margin-top: 16px }
+.out[hidden] { display: none !important }
+.out pre { margin: 0; background: var(--sheet); border: 1px solid var(--rule); border-radius: 8px; padding: 16px; overflow: auto; max-height: 60vh; font: 12.5px/1.6 var(--mono) }
+footer { margin-top: 24px; font-size: 13.5px; color: var(--muted); max-width: 80ch }
+footer p { margin: 0 0 8px }
+.toast { position: fixed; bottom: calc(20px + env(safe-area-inset-bottom, 0px)); left: 50%; transform: translateX(-50%); background: var(--fg); color: var(--sheet); padding: 8px 14px; border-radius: 6px; font-size: 13.5px }
+@media (max-width: 640px) { .cm { min-width: 200px } .code { font-size: 12.5px } }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+<header>
+  <h1>MCP<span>.</span>everything</h1>
+  <p class="lede">One object covering every part of the Model Context Protocol, spec revision 2026-07-28. Where the spec allows a fixed set of values, you get a dropdown with every option. Fixed values are written as they are. Values you supply yourself are shown as a type.</p>
+  <div class="stats" id="stats"></div>
+  <div class="legend">
+    <span><select tabindex="-1" aria-hidden="true"><option>dropdown</option></select> one of a fixed set</span>
+    <span><span class="fx">"2.0"</span> always this value</span>
+    <span><span class="fr">&lt;string&gt;</span> you fill it in</span>
+    <span><span class="dep-tag">deprecated</span> still works, avoid in new code</span>
+  </div>
+</header>
+
+<div class="bar" role="toolbar" aria-label="Object tools">
+  <input type="search" id="q" placeholder="Search keys, values, notes…" aria-label="Search the object">
+  <span id="found" aria-live="polite"></span>
+  <button type="button" id="exp">Expand all</button>
+  <button type="button" id="col">Collapse all</button>
+  <label for="notes"><input type="checkbox" id="notes" checked> Notes</label>
+  <button type="button" id="show">Show JSON</button>
+  <button type="button" class="primary" id="copy">Copy JSON</button>
+</div>
+
+<div class="sheet"><div class="code" id="tree"></div></div>
+<div class="out" id="out" hidden><pre id="json"></pre></div>
+
+<footer>
+  <p>Dropdown values were taken from the type definitions in the official Python SDK (mcp 2.3.0) and checked against the 2026-07-28 specification. Copy JSON uses whatever you currently have selected, and writes your-own values as placeholders such as <code>"&lt;string&gt;"</code>.</p>
+  <p>Fields in <code>tasks</code> follow the Tasks extension docs. The SDK still carries older 2025-11-25 task types with different names, so check the <a href="https://github.com/modelcontextprotocol/ext-tasks">ext-tasks repository</a> before implementing them.</p>
+</footer>
+</div>
+
+<script>
+(function () {
+  // F: fixed value. E: one of a fixed set. T: you supply it. D: marks a branch deprecated.
+  var F = function (v, n) { return { $: 'f', v: v, n: n }; };
+  var E = function (o, n) { return { $: 'e', o: o, n: n }; };
+  var T = function (v, n) { return { $: 't', v: v, n: n }; };
+  var B = function (n, d) { return E(d === false ? [[false, 'false (default)'], true] : d === true ? [[true, 'true (default)'], false] : [true, false], n); };
+  var NOTE = '$note', DEP = '$dep';
+
+  var VERSIONS = [['2026-07-28', '2026-07-28 · current, stateless'], ['2025-11-25', '2025-11-25 · final, uses initialize'], ['2025-06-18', '2025-06-18 · final'], ['2025-03-26', '2025-03-26 · final'], ['2024-11-05', '2024-11-05 · final, first release']];
+  var REQUESTS = ['server/discover', 'tools/list', 'tools/call', 'resources/list', 'resources/templates/list', 'resources/read', 'prompts/list', 'prompts/get', 'completion/complete', 'subscriptions/listen', ['tasks/get', 'tasks/get · Tasks extension'], ['tasks/update', 'tasks/update · Tasks extension'], ['tasks/cancel', 'tasks/cancel · Tasks extension']];
+  var NOTIFS = ['notifications/progress', ['notifications/cancelled', 'notifications/cancelled · stdio only'], ['notifications/message', 'notifications/message · deprecated logging'], 'notifications/tools/list_changed', 'notifications/prompts/list_changed', 'notifications/resources/list_changed', 'notifications/resources/updated', 'notifications/subscriptions/acknowledged'];
+  var REMOVED = ['initialize', 'notifications/initialized', 'ping', 'logging/setLevel', 'resources/subscribe', 'resources/unsubscribe', 'notifications/roots/list_changed', 'notifications/elicitation/complete', 'tasks/result', 'tasks/list'];
+  var INPUT_METHODS = ['elicitation/create', ['sampling/createMessage', 'sampling/createMessage · deprecated'], ['roots/list', 'roots/list · deprecated']];
+  var ERRORS = [[-32700, '-32700 Parse error'], [-32600, '-32600 Invalid request'], [-32601, '-32601 Method not found'], [-32602, '-32602 Invalid params / resource not found'], [-32603, '-32603 Internal error'], [-32020, '-32020 HeaderMismatch'], [-32021, '-32021 MissingRequiredClientCapability'], [-32022, '-32022 UnsupportedProtocolVersion'], [-32002, '-32002 Resource not found · old servers'], [-32042, '-32042 URL elicitation required · 2025-11-25']];
+  var LEVELS = ['debug', 'info', 'notice', 'warning', 'error', 'critical', 'alert', 'emergency'];
+  var RESULT_TYPES = [['complete', 'complete · finished'], ['input_required', 'input_required · MRTR, retry with answers'], ['task', 'task · Tasks extension, long job']];
+  var CACHE = [['private', 'private · per user'], ['public', 'public · shared caches may store it']];
+  var AUDIENCE = [[['user', 'assistant'], '["user","assistant"]'], [['user'], '["user"]'], [['assistant'], '["assistant"]']];
+  var JSONTYPES = ['string', 'number', 'integer', 'boolean', 'object', 'array', 'null'];
+  var TASK_STATUS = [['working', 'working · in progress'], ['input_required', 'input_required · answer via tasks/update'], ['completed', 'completed · final'], ['failed', 'failed · final'], ['cancelled', 'cancelled · final']];
+  var annotations = function () { return { audience: E(AUDIENCE, 'who the content is for'), priority: T('number 0.0–1.0', '1 = effectively required'), lastModified: T('ISO 8601 timestamp') }; };
+  var icon = function () { return [{ src: T('URL or data: URI'), mimeType: T('string', 'e.g. image/png'), sizes: [T('string', 'e.g. "48x48" or "any"')], theme: E(['light', 'dark'], 'optional: which UI theme it suits') }]; };
+  var impl = function (who) { return { name: T('string', who + ' name'), version: T('string'), title: T('string', 'display name'), description: T('string'), websiteUrl: T('URL'), icons: icon() }; };
+  var content = function () {
+    return {
+      type: E([['text', 'text'], ['image', 'image · base64'], ['audio', 'audio · base64'], ['resource_link', 'resource_link · a URI to fetch'], ['resource', 'resource · embedded contents']], 'content block kind'),
+      text: T('string', 'when type = text'),
+      data: T('base64 string', 'when type = image or audio'),
+      mimeType: T('string', 'e.g. image/png, audio/wav'),
+      uri: T('URI', 'when type = resource_link'),
+      resource: { $note: 'when type = resource', uri: T('URI'), mimeType: T('string'), text: T('string', 'text or blob, not both'), blob: T('base64 string') },
+      annotations: annotations()
+    };
+  };
+  var meta = function () {
+    return {
+      'io.modelcontextprotocol/protocolVersion': E(VERSIONS, 'required on every request'),
+      'io.modelcontextprotocol/clientInfo': impl('client'),
+      'io.modelcontextprotocol/clientCapabilities': T('object', 'see capabilities.client'),
+      'io.modelcontextprotocol/logLevel': E(LEVELS, 'deprecated logging: server only logs when this is set'),
+      'io.modelcontextprotocol/serverInfo': T('Implementation', 'only in result _meta, set by servers'),
+      'io.modelcontextprotocol/subscriptionId': T('string | number', 'only on subscriptions/listen notifications'),
+      progressToken: T('string | number', 'ask for progress notifications'),
+      traceparent: T('string', 'OpenTelemetry trace context'),
+      tracestate: T('string', 'OpenTelemetry'),
+      baggage: T('string', 'OpenTelemetry')
+    };
+  };
+
+  var MCP = {
+    protocol: {
+      name: F('Model Context Protocol'),
+      messageFormat: F('JSON-RPC 2.0'),
+      protocolVersion: E(VERSIONS, 'date of the last breaking change'),
+      revisionState: E([['Current', 'Current · in use, may get compatible fixes'], ['Final', 'Final · will not change'], ['Draft', 'Draft · in progress']]),
+      featureState: E([['Active', 'Active'], ['Deprecated', 'Deprecated · removable after 12 months'], ['Removed', 'Removed']]),
+      governedBy: F('Agentic AI Foundation (Linux Foundation)'),
+      changeProcess: F('SEP · Specification Enhancement Proposal')
+    },
+
+    participants: {
+      role: E([['host', 'host · the AI app, owns UI and consent'], ['client', 'client · one connection inside the host'], ['server', 'server · offers tools, resources, prompts']]),
+      clientsPerServer: F(1, 'each client talks to exactly one server'),
+      modelSpeaksMcp: F(false, 'the model asks the host; the client sends MCP')
+    },
+
+    transport: {
+      type: E([['stdio', 'stdio · local child process'], ['streamable-http', 'streamable-http · remote, one URL'], ['http+sse', 'http+sse · deprecated since 2025-03-26']]),
+      stdio: {
+        clientToServer: F('server stdin'),
+        serverToClient: F('server stdout · MCP messages only'),
+        logs: F('server stderr'),
+        framing: F('one JSON-RPC message per line, ending in \\n'),
+        cancel: F('notifications/cancelled'),
+        shutdown: F('client closes stdin, server exits'),
+        auth: F('credentials from environment variables')
+      },
+      streamableHttp: {
+        endpoint: T('URL', 'e.g. https://example.com/mcp'),
+        httpMethod: F('POST', 'every message is its own POST'),
+        requestHeaders: {
+          'Content-Type': F('application/json'),
+          Accept: F('application/json, text/event-stream'),
+          'MCP-Protocol-Version': E(VERSIONS, 'must equal the _meta version'),
+          'Mcp-Method': E(REQUESTS, 'must equal the body method'),
+          'Mcp-Name': T('string', 'tool or prompt name, or resource URI'),
+          'Mcp-Param-{Name}': T('string', 'mirrors a parameter marked x-mcp-header'),
+          Authorization: T('Bearer <access token>', 'when the server needs login')
+        },
+        responseContentType: E([['application/json', 'application/json · one response'], ['text/event-stream', 'text/event-stream · SSE stream for this request']]),
+        responseHeaders: { 'X-Accel-Buffering': F('no', 'on SSE, stops proxy buffering') },
+        httpStatus: E([[200, '200 OK'], [202, '202 Accepted · notification received'], [400, '400 Bad Request · version, header or capability error'], [401, '401 Unauthorized · token missing or invalid'], [403, '403 Forbidden · bad Origin or insufficient scope'], [404, '404 Not Found · unknown method'], [405, '405 Method Not Allowed · GET or DELETE from old clients']]),
+        nonAsciiHeaderValue: F('=?base64?{value}?='),
+        validateOrigin: F(true, 'reject a bad Origin with 403'),
+        localBindAddress: F('127.0.0.1', 'not 0.0.0.0'),
+        cancel: F('close the response stream'),
+        resumeWithLastEventId: F(false, 'removed: resend the request instead'),
+        sessions: F(false, 'Mcp-Session-Id removed in 2026-07-28')
+      }
+    },
+
+    jsonrpc: {
+      request: { jsonrpc: F('2.0'), id: T('string | number', 'unique per request'), method: E(REQUESTS), params: { _meta: meta() } },
+      notification: { jsonrpc: F('2.0'), method: E(NOTIFS), params: T('object'), $note: 'no id, gets no reply' },
+      successResponse: { jsonrpc: F('2.0'), id: T('same id as the request'), result: { resultType: E(RESULT_TYPES), _meta: { 'io.modelcontextprotocol/serverInfo': impl('server') } } },
+      errorResponse: { jsonrpc: F('2.0'), id: T('same id, or null'), error: { code: E(ERRORS), message: T('string'), data: T('any JSON', 'optional details') } }
+    },
+
+    removedMethods: E(REMOVED, 'gone in 2026-07-28; seen in older tutorials'),
+
+    capabilities: {
+      client: {
+        $note: 'sent in _meta on every request',
+        elicitation: { form: F({}, 'flat forms'), url: F({}, 'open a web page') },
+        sampling: { $dep: 1, tools: F({}), context: F({}) },
+        roots: { $dep: 1, listChanged: B('', false) },
+        extensions: { 'io.modelcontextprotocol/tasks': F({}, 'opt in to Tasks') },
+        experimental: T('object')
+      },
+      server: {
+        $note: 'returned by server/discover',
+        tools: { listChanged: B('sends tools/list_changed') },
+        resources: { subscribe: B('per-resource update events'), listChanged: B('sends resources/list_changed') },
+        prompts: { listChanged: B('sends prompts/list_changed') },
+        completions: F({}),
+        logging: { $dep: 1 },
+        extensions: { 'io.modelcontextprotocol/tasks': F({}) },
+        experimental: T('object')
+      }
+    },
+
+    discovery: {
+      method: F('server/discover', 'servers must implement; clients may skip'),
+      result: {
+        resultType: F('complete'),
+        supportedVersions: [E(VERSIONS)],
+        capabilities: T('object', 'see capabilities.server'),
+        instructions: T('string', 'guidance for the model'),
+        ttlMs: T('integer ms'), cacheScope: E(CACHE),
+        _meta: { 'io.modelcontextprotocol/serverInfo': impl('server') }
+      }
+    },
+
+    resultCommon: {
+      resultType: E(RESULT_TYPES, 'required on every result'),
+      ttlMs: T('integer ms', 'list results and resources/read'),
+      cacheScope: E(CACHE),
+      nextCursor: T('string', 'more pages exist'),
+      cursor: T('string', 'send in params to get the next page')
+    },
+
+    tools: {
+      controlledBy: F('model'),
+      methods: E(['tools/list', 'tools/call']),
+      tool: {
+        name: T('string', '1–128 chars: A-Z a-z 0-9 _ - .'),
+        title: T('string', 'for people'),
+        description: T('string', 'what the model reads to choose the tool'),
+        icons: icon(),
+        inputSchema: {
+          type: F('object'),
+          properties: {
+            '<param>': { type: E(JSONTYPES), description: T('string'), 'x-mcp-header': T('string', 'only string, integer, boolean; never secrets') }
+          },
+          required: [T('param name')],
+          additionalProperties: B('false = accepts only listed params'),
+          $schema: T('URL', 'defaults to JSON Schema 2020-12')
+        },
+        outputSchema: T('JSON Schema', 'optional; then structuredContent must match'),
+        annotations: {
+          $note: 'hints only: untrusted unless the server is trusted',
+          title: T('string'),
+          readOnlyHint: B('changes nothing', false),
+          destructiveHint: B('may delete or overwrite', true),
+          idempotentHint: B('repeat calls have no extra effect', false),
+          openWorldHint: B('touches outside systems', true)
+        },
+        _meta: T('object')
+      },
+      callParams: {
+        name: T('tool name'),
+        arguments: T('object', 'must match inputSchema'),
+        inputResponses: T('object', 'MRTR retry only'),
+        requestState: T('opaque string', 'MRTR retry only: echo exactly')
+      },
+      callResult: {
+        resultType: E(RESULT_TYPES),
+        content: [content()],
+        structuredContent: T('any JSON', 'typed result; also send it as text'),
+        isError: E([[false, 'false · success'], [true, 'true · execution error the model can fix']])
+      },
+      errorKind: E([['protocol', 'protocol error · JSON-RPC error, e.g. unknown tool'], ['execution', 'execution error · isError: true, e.g. bad date']]),
+      stateAcrossCalls: F('return a handle, pass it back as an argument')
+    },
+
+    content: content(),
+
+    resources: {
+      controlledBy: F('application'),
+      methods: E(['resources/list', 'resources/templates/list', 'resources/read']),
+      resource: { uri: T('URI'), name: T('string'), title: T('string'), description: T('string'), mimeType: T('string'), size: T('integer bytes'), icons: icon(), annotations: annotations() },
+      template: { uriTemplate: T('RFC 6570 template', 'e.g. notes://{id}'), name: T('string'), title: T('string'), description: T('string'), mimeType: T('string'), icons: icon() },
+      readResult: { resultType: E(RESULT_TYPES), contents: [{ uri: T('URI'), mimeType: T('string'), text: T('string', 'text or blob, not both'), blob: T('base64 string') }], ttlMs: T('integer ms'), cacheScope: E(CACHE) },
+      uriScheme: E([['https://', 'https:// · client may fetch directly'], ['file://', 'file:// · filesystem-like'], ['git://', 'git://'], ['custom://', 'custom · any RFC 3986 scheme']]),
+      notFoundErrorCode: F(-32602, 'old servers used -32002')
+    },
+
+    prompts: {
+      controlledBy: F('user', 'usually shown as slash commands'),
+      methods: E(['prompts/list', 'prompts/get']),
+      prompt: { name: T('string'), title: T('string'), description: T('string'), icons: icon(), arguments: [{ name: T('string'), title: T('string'), description: T('string'), required: B('', false) }] },
+      getResult: { resultType: E(RESULT_TYPES), description: T('string'), messages: [{ role: E(['user', 'assistant']), content: content() }] }
+    },
+
+    completion: {
+      method: F('completion/complete'),
+      ref: { type: E([['ref/prompt', 'ref/prompt · use name'], ['ref/resource', 'ref/resource · use uri']]), name: T('prompt name'), uri: T('resource template URI') },
+      argument: { name: T('string'), value: T('partial text typed so far') },
+      context: { arguments: T('object', 'already-filled arguments') },
+      result: { completion: { values: [T('string')], total: T('integer'), hasMore: B() } }
+    },
+
+    multiRoundTrip: {
+      $note: 'how a stateless server asks for more input',
+      allowedOn: E(['tools/call', 'resources/read', 'prompts/get']),
+      firstReply: {
+        resultType: F('input_required'),
+        inputRequests: { '<key>': { method: E(INPUT_METHODS, 'only what the client declared'), params: T('object') } },
+        requestState: T('opaque string', 'protect with HMAC/AEAD; attacker-controlled')
+      },
+      retry: {
+        id: F('a new id', 'never reuse the first id'),
+        sameMethodAndParams: F(true),
+        inputResponses: { '<key>': T('ElicitResult | CreateMessageResult | ListRootsResult') },
+        requestState: F('exact value received, unread')
+      }
+    },
+
+    elicitation: {
+      method: F('elicitation/create', 'sent inside inputRequests'),
+      mode: E([['form', 'form · in-band, never for secrets'], ['url', 'url · open a page, for secrets and payments']]),
+      message: T('string', 'why the server needs this'),
+      requestedSchema: {
+        $note: 'form mode only: flat object of simple fields',
+        type: F('object'),
+        properties: {
+          '<field>': {
+            type: E([['string', 'string'], ['number', 'number'], ['integer', 'integer'], ['boolean', 'boolean'], ['array', 'array · multi-select enum only']]),
+            title: T('string'), description: T('string'),
+            format: E([['email', 'email'], ['uri', 'uri'], ['date', 'date'], ['date-time', 'date-time']], 'string fields only'),
+            minLength: T('integer'), maxLength: T('integer'), minimum: T('number'), maximum: T('number'),
+            enum: [T('string')], oneOf: [{ const: T('string'), title: T('string') }],
+            default: T('value', 'clients should pre-fill it')
+          }
+        },
+        required: [T('field name')]
+      },
+      url: T('https URL', 'url mode only; no secrets in the URL'),
+      response: { action: E([['accept', 'accept · submitted'], ['decline', 'decline · said no'], ['cancel', 'cancel · dismissed']]), content: T('object', 'form mode accept only') }
+    },
+
+    sampling: {
+      $dep: 1,
+      method: F('sampling/createMessage'),
+      params: {
+        messages: [{ role: E(['user', 'assistant']), content: content() }],
+        systemPrompt: T('string'), maxTokens: T('integer'), temperature: T('number'), stopSequences: [T('string')], metadata: T('object'),
+        includeContext: E([['none', 'none'], ['thisServer', 'thisServer · deprecated'], ['allServers', 'allServers · deprecated']]),
+        modelPreferences: { hints: [{ name: T('model name substring') }], costPriority: T('number 0–1'), speedPriority: T('number 0–1'), intelligencePriority: T('number 0–1') },
+        tools: [T('Tool')],
+        toolChoice: { mode: E([['auto', 'auto · model decides'], ['required', 'required · must call a tool'], ['none', 'none · no tools']]) }
+      },
+      result: {
+        role: E(['assistant', 'user']), content: content(), model: T('string'),
+        stopReason: E(['endTurn', 'stopSequence', 'maxTokens', 'toolUse', ['<other>', 'any other string']]),
+        contentTypesWithTools: E([['tool_use', 'tool_use · id, name, input'], ['tool_result', 'tool_result · toolUseId, content, isError']])
+      }
+    },
+
+    roots: { $dep: 1, method: F('roots/list'), root: { uri: T('file:// URI'), name: T('string') }, useInstead: F('pass paths as tool arguments or config') },
+
+    subscriptions: {
+      method: F('subscriptions/listen', 'one long-lived stream'),
+      notifications: {
+        toolsListChanged: B(), promptsListChanged: B(), resourcesListChanged: B(),
+        resourceSubscriptions: [T('resource URI')]
+      },
+      acknowledgement: F('notifications/subscriptions/acknowledged', 'echoes what the server will honour'),
+      events: E(['notifications/tools/list_changed', 'notifications/prompts/list_changed', 'notifications/resources/list_changed', 'notifications/resources/updated']),
+      onDisconnect: F('reopen, then re-read what you care about')
+    },
+
+    progress: { method: F('notifications/progress', 'on the request\'s own stream'), progressToken: T('string | number'), progress: T('number', 'must increase'), total: T('number'), message: T('string') },
+
+    cancellation: { method: F('notifications/cancelled', 'stdio; on HTTP close the stream'), requestId: T('string | number'), reason: T('string') },
+
+    logging: { $dep: 1, method: F('notifications/message'), level: E(LEVELS), logger: T('string'), data: T('any JSON'), useInstead: F('stderr on stdio, OpenTelemetry elsewhere') },
+
+    tasks: {
+      $note: 'Tasks extension: long jobs with a durable handle',
+      extensionId: F('io.modelcontextprotocol/tasks'),
+      createResult: { resultType: F('task'), task: { taskId: T('string'), status: E(TASK_STATUS), statusMessage: T('string'), ttlMs: T('integer ms'), pollIntervalMs: T('integer ms') } },
+      methods: E([['tasks/get', 'tasks/get · poll status and result'], ['tasks/update', 'tasks/update · send inputResponses'], ['tasks/cancel', 'tasks/cancel · cooperative']]),
+      terminalResult: { result: T('original result', 'when completed'), error: T('JSON-RPC error', 'when failed') },
+      pushUpdates: F('via subscriptions/listen, if the server supports it')
+    },
+
+    authorization: {
+      appliesTo: E([['streamable-http', 'Streamable HTTP · OAuth 2.1'], ['stdio', 'stdio · use environment credentials instead']]),
+      roles: { mcpServer: F('OAuth resource server · checks tokens'), mcpClient: F('OAuth client'), authorizationServer: F('logs user in, issues tokens') },
+      challenge: { status: E([[401, '401 · no or bad token'], [403, '403 · insufficient_scope, step up']]), wwwAuthenticate: T('Bearer resource_metadata="…", scope="…"') },
+      protectedResourceMetadata: F('/.well-known/oauth-protected-resource'),
+      authServerMetadata: E([['/.well-known/oauth-authorization-server', 'OAuth 2.0 metadata (RFC 8414)'], ['/.well-known/openid-configuration', 'OpenID Connect discovery']], 'clients must support both'),
+      clientRegistration: E([['cimd', 'Client ID Metadata Document · preferred'], ['pre-registered', 'Pre-registered client ID'], ['dcr', 'Dynamic Client Registration · deprecated']]),
+      application_type: E([['native', 'native · desktop/CLI, localhost redirects'], ['web', 'web']], 'set during registration'),
+      grant_type: E([['authorization_code', 'authorization_code · user present'], ['refresh_token', 'refresh_token'], ['client_credentials', 'client_credentials · auth extension']]),
+      code_challenge_method: F('S256', 'PKCE is required'),
+      resource: T('canonical MCP server URI', 'in authorization and token requests'),
+      scope: T('space-separated scopes', 'start minimal, step up'),
+      issValidation: F('check iss against the recorded issuer (RFC 9207)'),
+      tokenUse: F('Authorization: Bearer <token> on every request, never in URLs'),
+      tokenAudience: F('must be this MCP server; passthrough is forbidden'),
+      oauthError: E(['invalid_request', 'invalid_token', 'insufficient_scope'])
+    },
+
+    extensions: E([['io.modelcontextprotocol/tasks', 'Tasks · long-running jobs'], ['mcp-apps', 'MCP Apps · interactive UI in chat'], ['skills', 'Skills over MCP · agent instructions'], ['oauth-client-credentials', 'OAuth client credentials · machine auth'], ['enterprise-managed-authorization', 'Enterprise-Managed Authorization']], 'opt-in; both sides must declare'),
+
+    deprecated: E([['roots', 'Roots → tool arguments or config'], ['sampling', 'Sampling → call a model API directly'], ['logging', 'Logging → stderr or OpenTelemetry'], ['dcr', 'Dynamic Client Registration → CIMD'], ['includeContext', 'includeContext thisServer/allServers → none'], ['http+sse', 'HTTP+SSE transport → Streamable HTTP']], 'earliest removal: first revision on or after 2027-07-28'),
+
+    sdks: {
+      tier1: E(['TypeScript', 'Python', 'Go', 'C#'], 'support 2026-07-28'),
+      pythonServerClass: F('mcp.server.MCPServer', 'FastMCP in v1'),
+      testingTool: F('MCP Inspector'),
+      registry: F('registry.modelcontextprotocol.io', 'metadata only, not a safety review')
+    }
+  };
+
+  var tree = document.getElementById('tree'), state = {};
+  try { state = JSON.parse(localStorage.getItem('mcp-obj') || '{}') || {}; } catch (e) {}
+  var counts = { e: 0, o: 0, f: 0, t: 0 };
+
+  function indent(line, depth) { for (var i = 0; i < depth; i++) { var s = document.createElement('span'); s.className = 'ind'; line.appendChild(s); } }
+  function span(cls, txt) { var s = document.createElement('span'); s.className = cls; s.textContent = txt; return s; }
+  function note(line, n, dep) {
+    if (dep) line.appendChild(span('dep-tag', 'deprecated'));
+    if (n) { var c = span('cm' + (dep ? ' dep' : ''), '// ' + n); line.appendChild(c); }
+  }
+  function lit(v) { return JSON.stringify(v); }
+  function isLeaf(v) { return v && typeof v === 'object' && !Array.isArray(v) && v.$; }
+
+  function leafNode(v, path) {
+    if (v.$ === 'f') { counts.f++; return span('fx', lit(v.v)); }
+    if (v.$ === 't') { counts.t++; return span('fr', '<' + v.v + '>'); }
+    counts.e++; counts.o += v.o.length;
+    var sel = document.createElement('select'); sel.id = 'f-' + path.replace(/[^a-z0-9]+/gi, '-');
+    sel.setAttribute('aria-label', path);
+    v.o.forEach(function (o, i) {
+      var label = Array.isArray(o) && typeof o[1] === 'string' ? o[1] : lit(o);
+      var op = document.createElement('option'); op.value = i; op.textContent = label; sel.appendChild(op);
+    });
+    if (state[path] != null && state[path] < v.o.length) sel.value = state[path];
+    sel.addEventListener('change', function () { state[path] = +sel.value; try { localStorage.setItem('mcp-obj', JSON.stringify(state)); } catch (e) {} });
+    v.sel = sel;
+    return sel;
+  }
+  function optValue(o) { return Array.isArray(o) && typeof o[1] === 'string' ? o[0] : o; }
+
+  function render(key, v, depth, path, last, parent, inheritedDep) {
+    var comma = last ? '' : ',';
+    var dep = inheritedDep || (v && v[DEP]);
+    var keyNode = function (line) { if (key !== null) { line.appendChild(span('k' + (dep ? ' dep' : ''), lit(key))); line.appendChild(span('p', ': ')); } };
+    if (isLeaf(v)) {
+      var line = document.createElement('div'); line.className = 'ln'; indent(line, depth);
+      line.appendChild(span('tg sp', '')); keyNode(line); line.appendChild(leafNode(v, path)); line.appendChild(span('p', comma));
+      note(line, v.n, false); line.dataset.s = ((key || '') + ' ' + (v.v != null ? JSON.stringify(v.v) : '') + ' ' + (v.o ? v.o.map(function (o) { return JSON.stringify(o); }).join(' ') : '') + ' ' + (v.n || '')).toLowerCase();
+      parent.appendChild(line); return;
+    }
+    var arr = Array.isArray(v), keys = arr ? v.map(function (_, i) { return i; }) : Object.keys(v).filter(function (k) { return k !== NOTE && k !== DEP; });
+    var box = document.createElement('div'); box.className = 'node';
+    var head = document.createElement('div'); head.className = 'ln'; indent(head, depth);
+    var tg = document.createElement('button'); tg.type = 'button'; tg.className = 'tg'; tg.setAttribute('aria-label', 'Toggle ' + (key || 'root'));
+    tg.addEventListener('click', function () { box.classList.toggle('closed'); tg.setAttribute('aria-expanded', !box.classList.contains('closed')); });
+    tg.setAttribute('aria-expanded', 'true');
+    head.appendChild(tg); keyNode(head); head.appendChild(span('p', arr ? '[' : '{'));
+    head.appendChild(span('sum', ' … ' + keys.length + (arr ? ' item' : ' key') + (keys.length === 1 ? '' : 's') + ' ' + (arr ? ']' : '}') + comma));
+    note(head, arr ? null : v[NOTE], !!(v && v[DEP]));
+    head.dataset.s = ((key || '') + ' ' + (arr ? '' : (v[NOTE] || '')) + (v && v[DEP] ? ' deprecated' : '')).toLowerCase();
+    box.appendChild(head);
+    var kids = document.createElement('div'); kids.className = 'kids';
+    keys.forEach(function (k, i) { render(arr ? null : k, v[k], depth + 1, path + '.' + k, i === keys.length - 1, kids, dep); });
+    var end = document.createElement('div'); end.className = 'ln'; indent(end, depth); end.appendChild(span('tg sp', '')); end.appendChild(span('p', (arr ? ']' : '}') + comma));
+    kids.appendChild(end);
+    box.appendChild(kids); parent.appendChild(box);
+  }
+  render(null, MCP, 0, 'MCP', true, tree, false);
+
+  document.getElementById('stats').innerHTML = '<span><b>' + counts.e + '</b> dropdowns</span><span><b>' + counts.o + '</b> allowed values</span><span><b>' + counts.f + '</b> fixed values</span><span><b>' + counts.t + '</b> values you supply</span>';
+
+  function toJSON(v) {
+    if (isLeaf(v)) {
+      if (v.$ === 'f') return v.v;
+      if (v.$ === 't') return '<' + v.v + '>';
+      return optValue(v.o[v.sel ? +v.sel.value : 0]);
+    }
+    if (Array.isArray(v)) return v.map(toJSON);
+    var o = {}; Object.keys(v).forEach(function (k) { if (k !== NOTE && k !== DEP) o[k] = toJSON(v[k]); }); return o;
+  }
+  function toast(t) { var d = document.createElement('div'); d.className = 'toast'; d.textContent = t; document.body.appendChild(d); setTimeout(function () { d.remove(); }, 1600); }
+  var out = document.getElementById('out'), pre = document.getElementById('json');
+  document.getElementById('copy').addEventListener('click', function () {
+    var txt = JSON.stringify(toJSON(MCP), null, 2); pre.textContent = txt;
+    try { navigator.clipboard.writeText(txt).then(function () { toast('Copied JSON'); }, function () { out.hidden = false; selectPre(); toast('Press Copy on the selected JSON'); }); }
+    catch (e) { out.hidden = false; selectPre(); toast('Press Copy on the selected JSON'); }
+  });
+  function selectPre() { var r = document.createRange(); r.selectNodeContents(pre); var s = getSelection(); s.removeAllRanges(); s.addRange(r); out.scrollIntoView(); }
+  var showBtn = document.getElementById('show');
+  showBtn.addEventListener('click', function () { out.hidden = !out.hidden; showBtn.textContent = out.hidden ? 'Show JSON' : 'Hide JSON'; if (!out.hidden) { pre.textContent = JSON.stringify(toJSON(MCP), null, 2); out.scrollIntoView(); } });
+  tree.addEventListener('change', function () { if (!out.hidden) pre.textContent = JSON.stringify(toJSON(MCP), null, 2); });
+
+  function setAll(closed) { tree.querySelectorAll('.node').forEach(function (n, i) { if (i === 0) return; n.classList.toggle('closed', closed); var t = n.querySelector('.tg'); if (t) t.setAttribute('aria-expanded', !closed); }); }
+  document.getElementById('exp').addEventListener('click', function () { setAll(false); });
+  document.getElementById('col').addEventListener('click', function () { setAll(true); });
+  document.getElementById('notes').addEventListener('change', function (e) { tree.querySelectorAll('.cm').forEach(function (c) { c.hidden = !e.target.checked; }); });
+
+  var q = document.getElementById('q'), found = document.getElementById('found'), timer;
+  q.addEventListener('input', function () {
+    clearTimeout(timer); timer = setTimeout(function () {
+      var term = q.value.trim().toLowerCase(), first = null, n = 0;
+      tree.querySelectorAll('.ln.hit').forEach(function (l) { l.classList.remove('hit'); });
+      if (!term) { found.textContent = ''; return; }
+      tree.querySelectorAll('.ln[data-s]').forEach(function (l) {
+        if (l.dataset.s.indexOf(term) === -1) return;
+        l.classList.add('hit'); n++; first = first || l;
+        for (var p = l.parentElement; p && p !== tree; p = p.parentElement) if (p.classList.contains('node')) p.classList.remove('closed');
+      });
+      found.textContent = n ? n + ' match' + (n === 1 ? '' : 'es') : 'no matches';
+      if (first) first.scrollIntoView({ block: 'center' });
+    }, 160);
+  });
+})();
+</script>
+</body>
+</html>

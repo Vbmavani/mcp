@@ -18,6 +18,10 @@ node build/index.js ../weather-server-typescript/build/index.js
 
 See the README in each folder for details.
 
+## MCP reference page
+
+[vbmavani.github.io/mcp](https://vbmavani.github.io/mcp/) shows every part of MCP (spec 2026-07-28) as one object, with a dropdown of every allowed value. The source is `docs/index.html`, served by GitHub Pages.
+
 ## Contributing
 
 `main` is protected. Make changes on a branch and open a pull request.
