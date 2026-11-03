@@ -4,6 +4,8 @@ A TypeScript MCP weather server and a TypeScript MCP client that connects to it.
 
 **Live MCP reference page: [vbmavani.github.io/mcp](https://vbmavani.github.io/mcp/)**
 
+**Every MCP component, grouped by role: [MCP-COMPONENTS.md](MCP-COMPONENTS.md)**
+
 | Folder | What it is |
 |---|---|
 | `weather-server-typescript/` | MCP server with weather tools backed by the US National Weather Service API |
