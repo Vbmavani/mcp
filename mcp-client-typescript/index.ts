@@ -130,10 +130,9 @@ class MCPClient {
         });
 
         // structuredContent is data the application can use directly.
-        if (Array.isArray(result.structuredContent)) {
-          finalText.push(
-            `[${toolUse.name} returned ${result.structuredContent.length} items]`,
-          );
+        const alerts = (result.structuredContent as { alerts?: unknown })?.alerts;
+        if (Array.isArray(alerts)) {
+          finalText.push(`[${toolUse.name} returned ${alerts.length} alerts]`);
         }
 
         // content is a list of block types; forward only the text ones. MCP

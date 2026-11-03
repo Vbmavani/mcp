@@ -75,19 +75,23 @@ interface ForecastResponse {
 }
 
 /**
- * The output schema of `get-alerts`: a top-level array, not an object, which
- * revision 2026-07-28 is the first to allow. The SDK projects it down to the
- * old `{ result: [...] }` wrapper for 2025-11-25 clients.
+ * The output schema of `get-alerts`. It is an object, not a top-level array,
+ * because MCP Apps hosts such as Claude reject array structuredContent.
  */
-const alertsOutputSchema = z.array(
-  z.object({
-    event: z.string().describe("The kind of weather event"),
-    area: z.string().describe("The area the alert covers"),
-    severity: z.string().describe("How severe the event is"),
-    description: z.string().describe("What is happening"),
-    instructions: z.string().describe("What people in the area should do"),
-  }),
-);
+const alertsOutputSchema = z.object({
+  state: z.string().describe("Two-letter state code the alerts are for"),
+  alerts: z
+    .array(
+      z.object({
+        event: z.string().describe("The kind of weather event"),
+        area: z.string().describe("The area the alert covers"),
+        severity: z.string().describe("How severe the event is"),
+        description: z.string().describe("What is happening"),
+        instructions: z.string().describe("What people in the area should do"),
+      }),
+    )
+    .describe("Active alerts, empty when there are none"),
+});
 
 /** The output schema of `get-forecast`: the object case. */
 const forecastOutputSchema = z.object({
@@ -107,7 +111,7 @@ const forecastOutputSchema = z.object({
     .describe("The forecast periods, soonest first"),
 });
 
-type Alert = z.infer<typeof alertsOutputSchema>[number];
+type Alert = z.infer<typeof alertsOutputSchema>["alerts"][number];
 type Forecast = z.infer<typeof forecastOutputSchema>;
 
 // Format alert data for the model to read
@@ -346,7 +350,10 @@ function buildServer(subscribable = false): McpServer {
           ? `No active alerts for ${stateCode}`
           : `Active alerts for ${stateCode}:\n\n${alerts.map(formatAlert).join("\n")}`;
 
-      return { content: [{ type: "text", text }], structuredContent: alerts };
+      return {
+        content: [{ type: "text", text }],
+        structuredContent: { state: stateCode, alerts },
+      };
     },
   );
 

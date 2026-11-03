@@ -53,11 +53,9 @@ function applyHostContext(ctx) {
   if (ctx?.styles?.css?.fonts) applyHostFonts(ctx.styles.css.fonts);
 }
 
-// 2025-11-25 clients get the array wrapped as { result: [...] }.
 function alertsFrom(result) {
-  const content = result?.structuredContent;
-  if (Array.isArray(content)) return content;
-  return Array.isArray(content?.result) ? content.result : [];
+  const alerts = result?.structuredContent?.alerts;
+  return Array.isArray(alerts) ? alerts : [];
 }
 
 function errorFrom(result) {

@@ -54,9 +54,7 @@ claude mcp add --transport http weather https://<your-service>.onrender.com/mcp 
 
 ## Structured content
 
-Both tools declare an `outputSchema` and return `structuredContent`. `get-forecast` returns an object; `get-alerts` returns a top-level JSON array, which protocol revision `2026-07-28` is the first to allow — see [Structured Content](https://modelcontextprotocol.io/specification/2026-07-28/server/tools#structured-content) in the spec.
-
-`serveStdio` serves both protocol eras from one factory, and the SDK projects the array-rooted schema down to the `{"result": [...]}` form for a `2025-11-25` client, so adopting it costs older clients nothing. See the [SDK documentation](https://ts.sdk.modelcontextprotocol.io/v2/).
+Both tools declare an `outputSchema` and return `structuredContent`. Both return objects: `get-forecast` returns `{ latitude, longitude, periods }`, and `get-alerts` returns `{ state, alerts }`. Revision `2026-07-28` also allows a top-level array, but MCP Apps hosts such as Claude reject array `structuredContent`, and `get-alerts` has an App view.
 
 ## Alerts widget
 
